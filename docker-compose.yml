@@ -1,0 +1,32 @@
+version: "3.9"  
+services:
+  tinyproxy-int:
+    image: tinyproxy:1.0    
+    depends_on:
+      - openvpn
+    network_mode: service:openvpn
+  openvpn:
+    build: ./openvpn
+    cap_add:
+      - "NET_ADMIN"
+    devices:
+      - "/dev/net/tun"
+    volumes:
+      -  ./vpn/:/srv/  
+    entrypoint: "openvpn --config /srv/netflix.ovpn"  
+    networks:
+      - default
+  tinyproxy-ext:    
+    build: ./tinyproxy
+    image: tinyproxy:1.0
+    ports:
+      - "8888:8888"
+    depends_on:
+      - tinyproxy-int 
+    volumes:
+      - ${PWD}/tinyproxy:/etc/tinyproxy
+      - ${PWD}/tinyproxy/tinyproxy.conf:/etc/tinyproxy/tinyproxy.conf        
+    links:
+      - "openvpn:tinyproxy-int"     
+networks:
+  default:
